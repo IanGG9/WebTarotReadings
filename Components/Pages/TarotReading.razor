@@ -1,0 +1,116 @@
+﻿@page "/TarotReading"
+
+@rendermode InteractiveServer
+@using WebTarotReadings.Services
+@using WebTarotReadings.Models
+
+<style>
+    body {
+        justify-content:space-between !important;
+    }
+</style>
+
+<header>
+    <div class="user_data">
+        <p>Korisničko ime: @user.Username</p>
+        <p>Datum rođenja: @user.BirthDate.Day.@user.BirthDate.Month.</p>
+        <p>Horoskopski znak: @user.HoroscopeSign</p>
+    </div>
+    <div class="symbols">
+        <img src="/Images/tarot-symbol.png" class="rotate_clocwize" />
+        <img src="/Images/tarot-symbol.png" class="rotate_counterclocwize" />
+    </div>
+    <button class="logout" onclick="@Logout">Odjava</button>
+</header>
+<div class="free-reading-text">
+    <h1>ODABERI KARTU</h1>
+    </div>
+<div class="reader_container">
+    @foreach (var card in tarotCards)
+    {
+        <div class="tarot_card" style="z-index: @card._zIndex" @onclick="() => FlipCard(card)">
+            <div class="card_inner @(card._isFLipped ? "flipped increaseZ" : "")">
+                <div class="card_front">
+                    <img src="@imageSrc"/>
+                </div>
+                <div class="card_back">
+                    <p class="card_name">@card._cardName</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<div class="redeal">
+    <button onclick="@GenerateCards">Ponovno dijeljenje karata</button>
+</div>
+<div class="table">
+    <p class="card_title">@cardTitle</p>
+    <p class="card_text">@cardText</p>
+</div>
+
+@code {
+    [Inject] private NavigationManager? navManager { get; set; }
+    [Inject] private TarotCardsService? tarotCardsService { get; set; }
+    [Inject] private UserService? userService { get; set; }
+    [Inject] private LoggedInUserModel? loggedInUser { get; set; }
+    private string imageSrc = "../Images/card_back.jpg";
+    private string cardTitle = "";
+    private string cardText = "";
+    private int z_index = 0;
+    private List<VisualTarotModel> tarotCards = new();
+    Random random = new Random();
+    private UserModel user = new UserModel();
+
+    public class VisualTarotModel
+    {
+        public string? _cardName { get; set; }
+        public string? _cardText { get; set; }
+        public bool _isFLipped { get; set; }
+        public int _zIndex { get; set; }
+    }
+
+    private void FillUser()
+    {
+        user = userService!.GetUser(loggedInUser!.Id);
+    }
+
+    protected override void OnInitialized()
+    {
+        GenerateCards();
+        FillUser();
+    }
+
+    private void GenerateCards()
+    {
+        tarotCards.Clear();
+        Dictionary<string, string> tempDict = new();
+        tempDict = tarotCardsService!.GenerateNewCards();
+
+        foreach (var item in tempDict)
+        {
+            tarotCards.Add(new VisualTarotModel
+                {
+                    _cardName = item.Key,
+                    _cardText = item.Value,
+                    _isFLipped = false
+                });
+        }
+
+        this.StateHasChanged();
+    }
+
+    private void FlipCard(VisualTarotModel card)
+    {
+        card._isFLipped = true;
+
+        cardTitle = card._cardName!;
+        cardText = card._cardText!;
+        card._zIndex = ++z_index;
+    }
+
+    private void Logout()
+    {
+        loggedInUser!.Clear();
+        navManager!.NavigateTo("/");
+    }
+}

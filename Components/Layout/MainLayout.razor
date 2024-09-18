@@ -1,0 +1,49 @@
+﻿@inherits LayoutComponentBase
+
+<style>
+    body {
+        background-image: url('/Images/background.jpg'); /* Update the path accordingly */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        margin: 0;
+        font-family: 'Celtic Hand', serif;
+    }
+
+    button {
+        background-color: #503630; 
+        color: goldenrod; 
+        margin: 30px;
+        border: 2px solid #c49a6c; 
+        padding: 10px 20px; 
+        font-size: 16px;
+        font-weight: bold; 
+        text-transform: uppercase; 
+        border-radius: 5px; 
+        cursor: pointer; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); 
+    }
+
+        button:hover {
+            background-color: goldenrod; 
+            color: #333;
+            border-color: #fff; 
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5); 
+            transform: translateY(-3px); 
+        }
+
+        button:focus {
+            outline: none; /* Remove default focus outline */
+            box-shadow: 0 0 10px #c49a6c; /* Glow effect when focused */
+        }
+
+</style>
+
+@Body
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

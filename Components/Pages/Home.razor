@@ -1,0 +1,172 @@
+﻿@page "/"
+
+@rendermode InteractiveServer
+@using WebTarotReadings.Models
+@using WebTarotReadings.Services
+
+
+
+<PageTitle>Tarot Reading</PageTitle>
+<h1 class="title">BESPLATNO TAROT ČITANJE</h1>
+<div class="container">
+    <div class="form_class">
+
+        @if (IsRegistered)
+        {
+            <div class="login">
+                <h1 class="display-6 font-raleway header">Prijava</h1>
+                <EditForm Model="this" OnValidSubmit="LogIn" FormName="LoginForm">
+                    <div>
+                        <label for="userName">Korisničko ime:</label>
+                        <InputText id="userName" class="form-control" @bind-Value="loginUsername" />
+                    </div>
+                    <div>
+                        <label for="password" class="mt-2">Lozinka:</label>
+                        <InputText id="password" type="password" class="form-control" @bind-Value="loginPassword" />
+                    </div>
+                    <div>
+                        <button type="submit" >Prijava</button>
+                    </div>
+                    <p class="login-paragraph" style="margin-top: 20px">
+                        Ukoliko nemate korisnički račun, <a href="#" style="color:#6a4a3d" @onclick='ToggleRegistration'>registrirajte se</a>.
+                    </p>
+                </EditForm>
+            </div>
+        }
+        else
+        {
+            <div class="register">
+                <h1 class="display-6 font-raleway header">Registracija</h1>
+                <EditForm Model="registrationModel" OnValidSubmit="Register" FormName="RegistrationForm">
+                    <DataAnnotationsValidator />
+                    <div>
+                        <label for="username">Korisničko ime:</label>
+                        <InputText id="username" class="form-control" @bind-Value="registrationModel.Username" />
+                        <ValidationMessage For="() => registrationModel.Username" />
+                    </div>
+                    <div>
+                        <label for="email">Email:</label>
+                        <InputText id="email" type="email" class="form-control" @bind-Value="registrationModel.Email" />
+                        <ValidationMessage For="() => registrationModel.Email" />
+                    </div>
+                    <div>
+                        <label for="birthDate">Datum rođenja:</label>
+                        <InputDate id="birthDate" class="form-control" @bind-Value="registrationModel.BirthDate" />
+                        <ValidationMessage For="() => registrationModel.BirthDate" />
+                    </div>
+                    <div>
+                        <label for="password" class="mt-2">Lozinka:</label>
+                        <InputText id="password" type="password" class="form-control" @bind-Value="registrationModel.Password" />
+                        <ValidationMessage For="() => registrationModel.Password" />
+                    </div>
+                    <div>
+                        <label for="passwordConfirm" class="mt-2">Ponovljena lozinka:</label>
+                        <InputText id="passwordConfirm" type="password" class="form-control" @bind-Value="registrationModel.ConfirmPassword" />
+                        <ValidationMessage For="() => registrationModel.ConfirmPassword" />
+                    </div>
+                    <div>
+                        <button type="submit">Registriraj se</button>
+                    </div>
+                </EditForm>
+                <p class="login-paragraph">
+                    <a href="#" style="color:#6a4a3d" @onclick='ToggleRegistration'>Povratak na prijavu</a>.
+                </p>
+            </div>
+        }
+
+
+        @if (IsErrorMessageVisible)
+        {
+            <div class="mt-4">
+                <p style="color:red">@ErrorMessage</p>
+            </div>
+        }
+    </div>
+</div>
+
+
+
+@code {
+    [Inject] private NavigationManager NavManager { get; set; }
+    [Inject] private LoggedInUserModel LoggedInUser { get; set; }
+    [Inject] private UserService userService { get; set; }
+    [Inject] private HoroscopeSignService horoscopeSignService { get; set; }
+
+    [SupplyParameterFromForm] private string loginUsername { get; set; }
+    [SupplyParameterFromForm] private string loginPassword { get; set; }
+
+    [SupplyParameterFromForm] private RegistrationModel registrationModel { get; set; } = new();
+
+    private bool IsErrorMessageVisible { get; set; }
+    private string ErrorMessage { get; set; }
+    private bool IsRegistered { get; set; } = true;
+
+    private void ToggleRegistration()
+    {
+        IsRegistered = !IsRegistered;
+        IsErrorMessageVisible = false;
+    }
+
+    private void LogIn()
+    {
+        try
+        {
+            var result = userService.Login(loginUsername, loginPassword);
+            if (result != null)
+            {
+                LoggedInUser.Id = result.Id;
+                LoggedInUser.User = result;
+                NavManager.NavigateTo("/TarotReading");
+            }
+            else
+            {
+                IsErrorMessageVisible = true;
+                ErrorMessage = "Korisničko ime ili lozinka nisu točni.";
+                loginUsername = "";
+                loginPassword = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+            throw;
+        }
+    }
+
+    private void Register()
+    {
+        try
+        {
+            IsErrorMessageVisible = false;
+            ErrorMessage = "";
+
+            var result = userService.GetUser(registrationModel.Username);
+            if (result is not null)
+            {
+                IsErrorMessageVisible = true;
+                ErrorMessage = "Korisničko ime već postoji!";
+                return;
+            }
+
+            var user = new UserModel
+                {
+                    Username = registrationModel.Username,
+                    Password = registrationModel.Password,
+                    Email = registrationModel.Email,
+                    BirthDate = registrationModel.BirthDate,
+                    HoroscopeSign = horoscopeSignService.GetHoroscopeSign(registrationModel.BirthDate)
+                };
+
+            userService.CreateUser(user);
+
+            loginUsername = registrationModel.Username;
+            loginPassword = registrationModel.Password;
+            LogIn();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+            throw;
+        }
+    }
+}
